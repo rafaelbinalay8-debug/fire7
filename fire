@@ -1,0 +1,148 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Bersihkan sarang lama
+if playerGui:FindFirstChild("RatUltimateShopBypass") then
+    playerGui.RatUltimateShopBypass:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "RatUltimateShopBypass"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 350, 0, 450)
+frame.Position = UDim2.new(0.5, -175, 0.5, -225)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 8)
+corner.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.Text = "Ultimate Shop Spoofer [4080]"
+title.TextColor3 = Color3.fromRGB(255, 80, 80)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.Parent = frame
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(0.9, 0, 0, 20)
+status.Position = UDim2.new(0.05, 0, 0.08, 0)
+status.BackgroundTransparency = 1
+status.Text = "Status: Scanning remotes..."
+status.TextColor3 = Color3.fromRGB(200, 200, 200)
+status.Font = Enum.Font.Code
+status.TextSize = 12
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = frame
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Size = UDim2.new(0.9, 0, 0.65, 0)
+scroll.Position = UDim2.new(0.05, 0, 0.15, 0)
+scroll.BackgroundTransparency = 1
+scroll.ScrollBarThickness = 6
+scroll.ScrollBarImageColor3 = Color3.fromRGB(255, 80, 80)
+scroll.Parent = frame
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 4)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = scroll
+
+local function addToList(text, color, isRemote, remoteObj)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 25)
+    btn.BackgroundTransparency = 0.8
+    btn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    btn.Text = text
+    btn.TextColor3 = color or Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.Code
+    btn.TextSize = 14
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.Parent = scroll
+    
+    btn.MouseButton1Click:Connect(function()
+        if isRemote and remoteObj then
+            status.Text = "Firing: " .. remoteObj.Name .. "..."
+            -- Spam fire dengan berbagai argumen umum buat nge-bypass validasi server
+            local args = {
+                {1}, -- ID 1
+                {"1"}, -- String 1
+                {1, 1}, -- ID, Quantity
+                {"1", 1},
+                {player, 1}, -- Player, ID
+                {1, true}, -- ID, Free flag
+                {1, 0}, -- ID, Cost 0
+                {1, "Free"}, 
+                {1, -1}, -- ID, Negative cost
+                {tostring(1)},
+            }
+            
+            for _, arg in ipairs(args) do
+                pcall(function()
+                    remoteObj:FireServer(unpack(arg))
+                end)
+            end
+            status.Text = "Spammed " .. remoteObj.Name .. " with 10 payload variations."
+        else
+            if setclipboard then
+                setclipboard(text)
+                status.Text = "Copied to clipboard!"
+            end
+        end
+    end)
+end
+
+local function scanRemotes()
+    local count = 0
+    status.Text = "Gnawing through ReplicatedStorage..."
+    task.wait()
+    
+    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            local name = obj.Name:lower()
+            if string.find(name, "buy") or string.find(name, "shop") or 
+               string.find(name, "purchase") or string.find(name, "item") or
+               string.find(name, "get") or string.find(name, "claim") or
+               string.find(name, "spawn") or string.find(name, "give") then
+                
+                addToList("REMOTE: " .. obj.Name .. " (" .. obj.ClassName .. ")", Color3.fromRGB(100, 255, 100), true, obj)
+                count = count + 1
+            end
+        end
+    end
+    
+    status.Text = "Found " .. count .. " potential shop remotes. Click to spam payload."
+end
+
+local btnScan = Instance.new("TextButton")
+btnScan.Size = UDim2.new(0.9, 0, 0, 35)
+btnScan.Position = UDim2.new(0.05, 0, 0.85, 0)
+btnScan.Text = "SCAN & EXPLOIT REMOTES"
+btnScan.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+btnScan.TextColor3 = Color3.new(1,1,1)
+btnScan.Font = Enum.Font.GothamBold
+btnScan.TextSize = 14
+btnScan.Parent = frame
+
+btnScan.MouseButton1Click:Connect(function()
+    -- Bersihkan list lama
+    for _, child in pairs(scroll:GetChildren()) do
+        if child:IsA("TextButton") then child:Destroy() end
+    end
+    scanRemotes()
+end)
+
+addToList("Click button below to start scan.", Color3.fromRGB(255, 80, 80))
